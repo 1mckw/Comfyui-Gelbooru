@@ -1,4 +1,10 @@
 # Comfyui-gelbooru
+
+建議的urls to image
+
+https://github.com/wmatson/easy-comfy-nodes
+
+
 Get images from gelbooru, support multiple tag searches, exclude tags, etc.
 
 從gelbooru取得圖片，支援多標籤搜索，排除標籤等。
