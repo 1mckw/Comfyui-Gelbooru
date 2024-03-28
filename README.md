@@ -2,6 +2,8 @@
 
 建議的urls to image
 
+Suggested urls to image
+
 https://github.com/wmatson/easy-comfy-nodes
 
 
