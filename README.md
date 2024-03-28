@@ -1,4 +1,4 @@
 # comfyui-gelbooru
 Get image from gelbooru
-![image](https://github.com/1mckw/Comfyui-gelbooru/assets/110599763/ac3ef722-0067-48d6-9b03-a58cf0c9e1b2)
+![image](https://github.com/1mckw/Comfyui-gelbooru/assets/110599763/f0740345-7f79-417f-b8c7-ed5328ec21f4)
 
