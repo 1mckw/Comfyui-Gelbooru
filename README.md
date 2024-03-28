@@ -1,6 +1,6 @@
 # comfyui-gelbooru
 Get images from gelbooru, support multiple tag searches, exclude tags, etc.
-user and api key are optional.
+\n user and api key are optional.
 
 ![317785103-f0740345-7f79-417f-b8c7-ed5328ec21f4](https://github.com/1mckw/Comfyui-gelbooru/assets/110599763/54301177-7e5c-45cf-832d-cf3ed5575fff)
 
