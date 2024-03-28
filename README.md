@@ -1,10 +1,6 @@
 # Comfyui-gelbooru
 
-建議的urls to image
 
-Suggested urls to image
-
-https://github.com/wmatson/easy-comfy-nodes
 
 
 Get images from gelbooru, support multiple tag searches, exclude tags, etc.
@@ -23,3 +19,11 @@ When requesting multiple images, the image size will be the same as the first im
 當請求多張圖片時，圖片大小將與第一張圖片相同。
 
 <img src='2.png' width='420'>
+
+#urls to img
+
+Suggested urls to image
+
+建議的urls to image
+
+https://github.com/wmatson/easy-comfy-nodes
