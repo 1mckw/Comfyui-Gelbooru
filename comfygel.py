@@ -28,8 +28,8 @@ class GelbooruRandom:
             },
         }
         
-    RETURN_TYPES = ("STRING","STRING","STRING", "STRING",)
-    RETURN_NAMES = ("imgtags","imgurl","imgid","url", )
+    RETURN_TYPES = ("STRING","STRING","STRING", )
+    RETURN_NAMES = ("imgtags","imgurl","imgid", )
     FUNCTION = "get_value"
     CATEGORY = "Gelbooru"
 
@@ -43,7 +43,7 @@ class GelbooruRandom:
         imgtags = '\n'.join(post["tags"].replace(" ", ", ") for post in posts)
         imgurl = '\n'.join(post["file_url"] for post in posts)
         imgid = '\n'.join(str(post["id"]) for post in posts)
-        return (imgtags, imgurl, imgid, url)
+        return (imgtags, imgurl, imgid, )
 
 
 class GelbooruID:
