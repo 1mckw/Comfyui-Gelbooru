@@ -1,5 +1,7 @@
 # Comfyui-gelbooru
 
+git clone https://github.com/1mckw/Comfyui-Gelbooru.git
+
 
 Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional.
 
