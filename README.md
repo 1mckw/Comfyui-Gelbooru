@@ -1,12 +1,12 @@
 # Comfyui-gelbooru
 
 
-Get images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional.
+Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional.
 
 Note that tags are separated by commas, and each tag must have a comma (including the last one)
 
 
-從gelbooru取得圖片，支援多標籤搜索，排除標籤等。使用者和 api 密鑰是可選的。
+隨機從gelbooru取得圖片，支援多標籤搜索，排除標籤等。使用者和 api 密鑰是可選的。
 
 注意 tag 之間使用逗號區隔，每個 tag 皆須逗號。
 
