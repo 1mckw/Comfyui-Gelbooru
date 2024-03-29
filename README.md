@@ -24,6 +24,5 @@ urls to img
 
 Suggested urls to image
 
-建議的urls to image
 
 https://github.com/wmatson/easy-comfy-nodes
