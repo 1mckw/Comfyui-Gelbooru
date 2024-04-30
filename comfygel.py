@@ -19,7 +19,7 @@ class GelbooruRandom:
             "required": {
                 "input_tags": ("STRING", {"default": "", "multiline": True}),
                 "exclude_tag": ("STRING", {"default": "animated,", "multiline": True}),
-                "note area": ("STRING",{"default": "note area : absurdres, highres,\ngeneral, sensitive, questionable, explicit, ", "multiline": True}),
+                "note_area": ("STRING",{"default": "note area : absurdres, highres,\ngeneral, sensitive, questionable, explicit, ", "multiline": True}),
                 "score": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "user_id": ("STRING", {"default": "1414144"}),
                 "api_key": ("STRING", {"default": "ed9a8f6ba574732b7401b78fa0d278133431911f8504740a526f36785db62e41"}),
@@ -33,7 +33,7 @@ class GelbooruRandom:
     FUNCTION = "get_value"
     CATEGORY = "Gelbooru"
 
-    def get_value(self, input_tags, exclude_tag, recommend, score, user_id, api_key, seed, count, ):
+    def get_value(self, input_tags, exclude_tag, note_area, score, user_id, api_key, seed, count, ):
         inputtags = '+'.join(item.strip().replace(' ', '_') for item in input_tags.split(','))
         excludetags = '+'.join('-' + item.strip().replace(' ', '_') for item in exclude_tag.split(','))
         score, count = str(score), str(count)
