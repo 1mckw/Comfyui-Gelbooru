@@ -19,7 +19,7 @@ class GelbooruRandom:
             "required": {
                 "input_tags": ("STRING", {"default": "", "multiline": True}),
                 "exclude_tag": ("STRING", {"default": "animated,", "multiline": True}),
-                "recommend": ("STRING",{"default": "note area : absurdres, highres,\ngeneral, sensitive, questionable, explicit, ", "multiline": True}),
+                "note area": ("STRING",{"default": "note area : absurdres, highres,\ngeneral, sensitive, questionable, explicit, ", "multiline": True}),
                 "score": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "user_id": ("STRING", {"default": "1414144"}),
                 "api_key": ("STRING", {"default": "ed9a8f6ba574732b7401b78fa0d278133431911f8504740a526f36785db62e41"}),
