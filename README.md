@@ -9,7 +9,7 @@
 
 Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional.
 
-Note that tags are separated by commas, and each tag must have a comma (including the last one)
+Note that tags are separated by commas, and each tag must have a comma.
 
 
 隨機從gelbooru取得圖片，支援多標籤搜索，排除標籤等。使用者和 api 密鑰是可選的。
