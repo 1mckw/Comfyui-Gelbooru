@@ -34,7 +34,7 @@ class GelbooruRandom:
     CATEGORY = "Gelbooru"
 
     def get_value(self, input_tags, exclude_tag, note_area, score, user_id, api_key, seed, count, ):
-        inputtags = '+'.join(item.strip().replace(' ', '_') for item in (input_tags + ',').split(','))
+        inputtags = '+'.join(item.strip().replace(' ', '_').replace('\\', '') for item in (input_tags + ',').split(','))
         excludetags = '+'.join('-' + item.strip().replace(' ', '_') for item in exclude_tag.split(','))
         score, count = str(score), str(count)
         url = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&tags=sort%3arandom+"+excludetags+"+"+inputtags+"score%3a>"+score+"&api_key="+api_key+"&user_id="+user_id+"&limit="+count+"&json=1"
