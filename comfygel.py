@@ -52,7 +52,7 @@ class GelbooruID:
     CATEGORY = "Gelbooru"
   
     def get_value(self, post_id):
-        url = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&id="+post_id+"&json=1&api_key=ed9a8f6ba574732b7401b78fa0d278133431911f8504740a526f36785db62e41&user_id=1414144"
+        url = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&id="+post_id+"&json=1"
         posts = requests.get(url).json()["post"]
         imgtags = []
         imgurl = []
