@@ -17,10 +17,11 @@ class GelbooruRandom:
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "count": ("INT", {"default": 1, "min": 1, "max": 100}),
             },
+            
         }
         
-    RETURN_TYPES = ("STRING","STRING","STRING", )
-    RETURN_NAMES = ("imgtags","imgurl","imgid", )
+    RETURN_TYPES = ("STRING","STRING","STRING", "INT", "INT", "STRING",)
+    RETURN_NAMES = ("imgtags","imgurl","imgid","width", "height", "source",)
     FUNCTION = "get_value"
     CATEGORY = "Gelbooru"
 
@@ -31,10 +32,14 @@ class GelbooruRandom:
         url = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&tags=sort%3arandom+"+excludetags+"+"+inputtags+"score%3a>"+score+"&api_key="+api_key+"&user_id="+user_id+"&limit="+count+"&json=1"
         url=url.replace("-+", "")
         posts = requests.get(url).json()['post']
-        imgtags = '\n'.join(post["tags"].replace(" ", ", ") for post in posts)
-        imgurl = '\n'.join(post["file_url"] for post in posts)
-        imgid = '\n'.join(str(post["id"]) for post in posts)
-        return (imgtags, imgurl, imgid, )
+        imgtags = '\n'.join(post.get("tags", "").replace(" ", ", ") for post in posts)
+        imgurl = '\n'.join(post.get("file_url", "") for post in posts)
+        imgid = '\n'.join(str(post.get("id", "")) for post in posts)
+        width = '\n'.join(str(post.get("width", 0)) for post in posts)
+        height = '\n'.join(str(post.get("height", 0)) for post in posts)
+        source = '\n'.join(post.get("source", "") for post in posts)
+
+        return (imgtags, imgurl, imgid, width, height, source,)
 
 
 class GelbooruID:
@@ -61,7 +66,6 @@ class GelbooruID:
             imgurl = post["file_url"]
             imgtags.append(tags)
         return (imgtags, imgurl,)
-
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GelbooruRandom": "Gelbooru (Random)",
