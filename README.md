@@ -23,6 +23,6 @@ When requesting multiple images, the image size will be the same as the first im
 
 <img src='2.png' width='420'>
 
-## Suggested urls to image
+## Suggested batch urls to image
 
 https://github.com/wmatson/easy-comfy-nodes
