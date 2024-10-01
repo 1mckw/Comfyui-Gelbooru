@@ -7,6 +7,13 @@
 
 ## Gelbooru(Random)
 
+24.10.1
+
+Added rule34.xxx
+
+新增rule34.xxx
+
+------------------------------------------------------------------------------------------------
 Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional.
 
 Note that tags are separated by commas, and each tag must have a comma.
