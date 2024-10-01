@@ -9,9 +9,9 @@
 
 24.10.1
 
-Added rule34.xxx
+Added rule34.xxx and rating
 
-新增rule34.xxx
+新增rule34.xxx及評級
 
 ------------------------------------------------------------------------------------------------
 Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional.
