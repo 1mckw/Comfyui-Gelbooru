@@ -91,7 +91,7 @@ class GelbooruRandom:
         url = f"{base_url}?{query_params}".replace("-+", "")
         url = re.sub(r"\++", "+", url)
         
-        response = requests.get(url)
+        response = requests.get(url, verify=True)
 
         if site == "Rule34":
             posts = response.json()
