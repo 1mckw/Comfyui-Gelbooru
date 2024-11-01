@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-gelbooru"
+description = "Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional."
+version = "1.0.0"
+license = "LICENSE"
+
+[project.urls]
+Repository = "https://github.com/1mckw/Comfyui-Gelbooru"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "Comfyui-Gelbooru"
+Icon = ""
