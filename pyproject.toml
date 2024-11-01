@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-gelbooru"
-description = "Get random images from gelbooru, support multiple tag searches, exclude tags, etc. user and api key are optional."
+description = "Get random images from gelbooru or rule34."
 version = "1.0.0"
 license = "LICENSE"
 
