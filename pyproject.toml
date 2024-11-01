@@ -9,6 +9,6 @@ Repository = "https://github.com/1mckw/Comfyui-Gelbooru"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "mckw"
 DisplayName = "Comfyui-Gelbooru"
 Icon = ""
