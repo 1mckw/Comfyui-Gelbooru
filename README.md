@@ -1,7 +1,7 @@
 # Comfyui-gelbooru
 
 
-https://github.com/user-attachments/assets/28e75f32-b27e-4502-8097-c9f70247c216
+https://github.com/user-attachments/assets/e07b95f2-61e6-4d52-9d36-7eade996e720
 
 
 # Installation
