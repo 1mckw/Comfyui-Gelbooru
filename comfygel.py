@@ -2,6 +2,76 @@ import requests
 import json
 from PIL import Image, ImageOps
 import re
+import requests
+import base64
+import io
+import numpy as np
+from PIL import Image, ImageOps
+import torch
+import boto3
+import comfy
+
+
+#urls to image from https://github.com/wmatson/easy-comfy-nodes/blob/main/__init__.py#L140
+def loadImageFromUrl(url):
+    if url.startswith("data:image/"):
+        i = Image.open(io.BytesIO(base64.b64decode(url.split(",")[1])))
+    elif url.startswith("s3://"):
+        s3 = boto3.client('s3')
+        bucket, key = url.split("s3://")[1].split("/", 1)
+        obj = s3.get_object(Bucket=bucket, Key=key)
+        i = Image.open(io.BytesIO(obj['Body'].read()))
+    else:
+        response = requests.get(url, timeout=5)
+        if response.status_code != 200:
+            raise Exception(response.text)
+
+        i = Image.open(io.BytesIO(response.content))
+
+    i = ImageOps.exif_transpose(i)
+
+    if i.mode != "RGBA":
+        i = i.convert("RGBA")
+
+    # recreate image to fix weird RGB image
+    alpha = i.split()[-1]
+    image = Image.new("RGB", i.size, (0, 0, 0))
+    image.paste(i, mask=alpha)
+
+    image = np.array(image).astype(np.float32) / 255.0
+    image = torch.from_numpy(image)[None,]
+    if "A" in i.getbands():
+        mask = np.array(i.getchannel("A")).astype(np.float32) / 255.0
+        mask = 1.0 - torch.from_numpy(mask)
+    else:
+        mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
+
+    return (image, mask)
+
+class UrlsToImage:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"urls": ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False})}}
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES=("images",)
+    FUNCTION = "execute"
+    CATEGORY = "Gelbooru"
+
+    def execute(self, urls):
+        print(urls.split("\n"))
+        images = [loadImageFromUrl(u)[0] for u in urls.split("\n")]
+        firstImage = images[0]
+        restImages = images[1:]
+        if len(restImages) == 0:
+            return (firstImage,)
+        else:
+            image1 = firstImage
+            for image2 in restImages:
+                if image1.shape[1:] != image2.shape[1:]:
+                    image2 = comfy.utils.common_upscale(image2.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
+                image1 = torch.cat((image1, image2), dim=0)
+            return (image1,)
+
 
 class GelbooruRandom:
     @classmethod
@@ -137,5 +207,5 @@ class GelbooruID:
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GelbooruRandom": "Gelbooru (Random)",
     "GelbooruID": "Gelbooru (ID)",
-    "Pose filter" : "Posefilter",
+    "UrlsToImage": "UrlsToImage",
 }
