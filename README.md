@@ -35,7 +35,3 @@ When requesting multiple images, the image size will be the same as the first im
 
 ![2](https://github.com/user-attachments/assets/bff8588f-6a27-4983-9607-c04b61f9fd0a)
 
-
-## Suggested batch urls to image
-
-https://github.com/wmatson/easy-comfy-nodes
