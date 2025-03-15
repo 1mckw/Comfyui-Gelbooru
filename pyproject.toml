@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-gelbooru"
 description = "Get random images from gelbooru or rule34."
-version = "1.0.2"
+version = "1.0.4"
 license = "LICENSE"
 
 [project.urls]
