@@ -2,7 +2,7 @@
 
 ![screenshot.jpg](screenshot.jpg)
 
-A set of custom nodes for ComfyUI that fetch random images from [Gelbooru](https://gelbooru.com/) and [Rule34](https://rule34.xxx/) based on tag filters, post ID, or direct URL.
+A set of custom nodes for ComfyUI that fetch random images from [Gelbooru](https://gelbooru.com/) and [Rule34](https://rule34.xxx/) based on tag filters, post ID, or direct URL. It also ships a **Tag Rules** node that rewrites and filters the fetched tags before they reach your prompt.
 
 https://github.com/user-attachments/assets/e07b95f2-61e6-4d52-9d36-7eade996e720
 
@@ -24,11 +24,15 @@ Gelbooru **requires** an API key and user ID to fetch posts.
 1. Go to https://gelbooru.com/index.php?page=account&s=options
 2. Scroll to the bottom of the page
 3. Copy your `api_key` and `user_id`
-4. Enter them in the `api_credentials` field in this format:
+4. Open the **API key...** button in the `Gelbooru (Random)` or `Gelbooru (ID)` node and paste both values there
 
-```
-api_key=YOUR_API_KEY&user_id=YOUR_USER_ID
-```
+The key is stored **on the server**, in `ComfyUI/user/default/gelbooru_credentials.json`, and the node only keeps a profile name. This matters: ComfyUI writes every node input into the `prompt` chunk and every widget value into the `workflow` chunk of the PNG metadata, so a key typed into a node widget would travel inside every generated image and every exported workflow.
+
+Keys from older workflows are migrated automatically the first time the workflow is opened: the value is moved to the server store and the old field is cleared. If you would rather not use the dialog, the key can also be supplied with the `GELBOORU_API_KEY` and `GELBOORU_USER_ID` environment variables.
+
+The legacy `api_credentials` field still exists (hidden) so that old workflows keep loading, but its value is cleared automatically as soon as it is migrated.
+
+If a key was written into metadata by an older version, it stays in the images and workflows that were generated with it: rotating the key on the Gelbooru site is the way to invalidate those copies.
 
 ---
 
@@ -54,7 +58,7 @@ Fetches random image posts from Gelbooru or Rule34 based on your tag filters.
 | `Questionable` | Include Questionable/Sensitive rated posts |
 | `Explicit` | Include Explicit rated posts |
 | `score` | Minimum score threshold. `0` = no filter. |
-| `api_credentials` | Your API key and user ID in format `api_key=xxx&user_id=xxx` |
+| `credentials_profile` | Which stored credentials profile to use (default `default`). Set through the **API key...** button, see [Getting API Credentials](#getting-api-credentials). |
 | `seed` | Seed for deterministic random selection. `0` = truly random. |
 | `count` | Number of posts to fetch per request (max 100). |
 | `use_last_prompt` | Reuse the previous API response without making a new request. Useful for iterating on the same batch. |
@@ -120,6 +124,56 @@ Fetches a single post from Gelbooru by its numeric post ID.
 | `post_id` | The numeric ID of the post to fetch (e.g. `1234567`). |
 | `use_last_prompt` | Reuse the previous API response without making a new request. |
 | `return_picture` | Download the post's image and output it as an IMAGE tensor. |
+| `credentials_profile` | Which stored credentials profile to use (default `default`). See [Getting API Credentials](#getting-api-credentials). |
+
+---
+
+### Gelbooru (Tag Rules - Replace & Remove)
+
+Rewrites the `imgtags` string coming from the Gelbooru nodes with your own rules - no code needed.
+Two editable tables live inside the node:
+
+- **Replace tags** - left column is what to find, right column is what to put instead.
+- **Remove tags** - tags that must never reach the prompt (for example `censored`).
+
+| Field | Description |
+|---|---|
+| `text` | Input socket. Connect `imgtags` (or any STRING) here. One post per line, tags separated by commas. |
+| `match_mode` | How several tags in the **Find** column are matched (see below). |
+| `case_sensitive` | `False` by default, so `1Girl` and `1girl` are treated as the same tag. |
+| `treat_underscore_as_space` | `True` by default, so a rule written as `long hair` also matches the tag `long_hair`. |
+| `remove_duplicates` | `True` by default, drops repeated tags from each line after the rules ran. |
+| `rules_json` | Hidden field that stores the rule table as JSON. You normally never edit it by hand, but it keeps workflows and API calls portable. |
+
+**Using the tables**
+
+- Press **+ Add rule** under the replace table (or **+ Add tag** under the remove table) to add a row, press **✕** to delete one, and press `Enter` inside a field to add the next row.
+- Both columns accept several comma separated tags:
+
+  | Find | Replace with | Effect |
+  |---|---|---|
+  | `1girl` | `1boy` | one tag becomes one tag |
+  | `1girl` | `1boy, male_focus` | one tag becomes two |
+  | `1girl, solo` | `1boy` | two tags become one |
+  | `censored` | *(empty)* | deletes the found tags |
+
+- The **Remove** column accepts the `*` wildcard, so `*_background` removes `white_background`, `simple_background`, ...
+- Rules run from top to bottom and chain into each other, then the remove table cleans up the result.
+
+**match_mode**
+
+- `All tags (any order)` (default) - every tag in the Find cell must be somewhere on the line, so `1girl, solo` matches `solo, 1girl, smile`.
+- `Exact sequence` - the tags must sit next to each other in that order, so `1girl, solo` matches `1girl, solo, smile` but not `solo, 1girl`.
+
+**Example**
+
+```
+imgtags : masterpiece, 1girl, solo, long_hair, censored
+rule 1  : 1girl, solo  -> 1boy, male_focus
+rule 2  : long hair    -> short_hair
+remove  : censored
+result  : masterpiece, 1boy, male_focus, short_hair
+```
 
 ---
 
@@ -135,7 +189,7 @@ Loads images from one or more URLs into an IMAGE tensor.
 
 ## Outputs
 
-All nodes share these common output sockets:
+The `Gelbooru (Random)` and `Gelbooru (ID)` nodes share these common output sockets:
 
 | Output | Type | Description |
 |---|---|---|
@@ -145,7 +199,7 @@ All nodes share these common output sockets:
 | `width` | INT | Width of the image(s) in pixels. |
 | `height` | INT | Height of the image(s) in pixels. |
 | `source` | STRING | Source website URL(s) of the post(s) (one per line). |
-| `url` | STRING | The full API query URL used for the request (Gelbooru Random only). |
+| `url` | STRING | The full API query URL used for the request (Gelbooru Random only). Credentials inside it are masked as `api_key=***&user_id=***`. |
 | `IMAGE` | IMAGE | Image tensor — only populated when `return_picture` is enabled, otherwise a blank 1x1 image. |
 
 ---
