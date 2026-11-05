@@ -2,7 +2,7 @@
 
 ![screenshot.jpg](screenshot.jpg)
 
-A set of custom nodes for ComfyUI that fetch random images from [Gelbooru](https://gelbooru.com/) and [Rule34](https://rule34.xxx/) based on tag filters, post ID, or direct URL.
+A set of custom nodes for ComfyUI that fetch random images from [Gelbooru](https://gelbooru.com/) and [Rule34](https://rule34.xxx/) based on tag filters, post ID, or direct URL. It also ships a **Tag Rules** node that rewrites and filters the fetched tags before they reach your prompt.
 
 https://github.com/user-attachments/assets/e07b95f2-61e6-4d52-9d36-7eade996e720
 
@@ -123,6 +123,55 @@ Fetches a single post from Gelbooru by its numeric post ID.
 
 ---
 
+### Gelbooru (Tag Rules - Replace & Remove)
+
+Rewrites the `imgtags` string coming from the Gelbooru nodes with your own rules - no code needed.
+Two editable tables live inside the node:
+
+- **Replace tags** - left column is what to find, right column is what to put instead.
+- **Remove tags** - tags that must never reach the prompt (for example `censored`).
+
+| Field | Description |
+|---|---|
+| `text` | Input socket. Connect `imgtags` (or any STRING) here. One post per line, tags separated by commas. |
+| `match_mode` | How several tags in the **Find** column are matched (see below). |
+| `case_sensitive` | `False` by default, so `1Girl` and `1girl` are treated as the same tag. |
+| `treat_underscore_as_space` | `True` by default, so a rule written as `long hair` also matches the tag `long_hair`. |
+| `remove_duplicates` | `True` by default, drops repeated tags from each line after the rules ran. |
+| `rules_json` | Hidden field that stores the rule table as JSON. You normally never edit it by hand, but it keeps workflows and API calls portable. |
+
+**Using the tables**
+
+- Press **+ Add rule** under the replace table (or **+ Add tag** under the remove table) to add a row, press **✕** to delete one, and press `Enter` inside a field to add the next row.
+- Both columns accept several comma separated tags:
+
+  | Find | Replace with | Effect |
+  |---|---|---|
+  | `1girl` | `1boy` | one tag becomes one tag |
+  | `1girl` | `1boy, male_focus` | one tag becomes two |
+  | `1girl, solo` | `1boy` | two tags become one |
+  | `censored` | *(empty)* | deletes the found tags |
+
+- The **Remove** column accepts the `*` wildcard, so `*_background` removes `white_background`, `simple_background`, ...
+- Rules run from top to bottom and chain into each other, then the remove table cleans up the result.
+
+**match_mode**
+
+- `All tags (any order)` (default) - every tag in the Find cell must be somewhere on the line, so `1girl, solo` matches `solo, 1girl, smile`.
+- `Exact sequence` - the tags must sit next to each other in that order, so `1girl, solo` matches `1girl, solo, smile` but not `solo, 1girl`.
+
+**Example**
+
+```
+imgtags : masterpiece, 1girl, solo, long_hair, censored
+rule 1  : 1girl, solo  -> 1boy, male_focus
+rule 2  : long hair    -> short_hair
+remove  : censored
+result  : masterpiece, 1boy, male_focus, short_hair
+```
+
+---
+
 ### UrlsToImage
 
 Loads images from one or more URLs into an IMAGE tensor.
@@ -135,7 +184,7 @@ Loads images from one or more URLs into an IMAGE tensor.
 
 ## Outputs
 
-All nodes share these common output sockets:
+The `Gelbooru (Random)` and `Gelbooru (ID)` nodes share these common output sockets:
 
 | Output | Type | Description |
 |---|---|---|
