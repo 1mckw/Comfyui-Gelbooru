@@ -24,11 +24,15 @@ Gelbooru **requires** an API key and user ID to fetch posts.
 1. Go to https://gelbooru.com/index.php?page=account&s=options
 2. Scroll to the bottom of the page
 3. Copy your `api_key` and `user_id`
-4. Enter them in the `api_credentials` field in this format:
+4. Open the **API key...** button in the `Gelbooru (Random)` or `Gelbooru (ID)` node and paste both values there
 
-```
-api_key=YOUR_API_KEY&user_id=YOUR_USER_ID
-```
+The key is stored **on the server**, in `ComfyUI/user/default/gelbooru_credentials.json`, and the node only keeps a profile name. This matters: ComfyUI writes every node input into the `prompt` chunk and every widget value into the `workflow` chunk of the PNG metadata, so a key typed into a node widget would travel inside every generated image and every exported workflow.
+
+Keys from older workflows are migrated automatically the first time the workflow is opened: the value is moved to the server store and the old field is cleared. If you would rather not use the dialog, the key can also be supplied with the `GELBOORU_API_KEY` and `GELBOORU_USER_ID` environment variables.
+
+The legacy `api_credentials` field still exists (hidden) so that old workflows keep loading, but its value is cleared automatically as soon as it is migrated.
+
+If a key was written into metadata by an older version, it stays in the images and workflows that were generated with it: rotating the key on the Gelbooru site is the way to invalidate those copies.
 
 ---
 
@@ -54,7 +58,7 @@ Fetches random image posts from Gelbooru or Rule34 based on your tag filters.
 | `Questionable` | Include Questionable/Sensitive rated posts |
 | `Explicit` | Include Explicit rated posts |
 | `score` | Minimum score threshold. `0` = no filter. |
-| `api_credentials` | Your API key and user ID in format `api_key=xxx&user_id=xxx` |
+| `credentials_profile` | Which stored credentials profile to use (default `default`). Set through the **API key...** button, see [Getting API Credentials](#getting-api-credentials). |
 | `seed` | Seed for deterministic random selection. `0` = truly random. |
 | `count` | Number of posts to fetch per request (max 100). |
 | `use_last_prompt` | Reuse the previous API response without making a new request. Useful for iterating on the same batch. |
@@ -120,6 +124,7 @@ Fetches a single post from Gelbooru by its numeric post ID.
 | `post_id` | The numeric ID of the post to fetch (e.g. `1234567`). |
 | `use_last_prompt` | Reuse the previous API response without making a new request. |
 | `return_picture` | Download the post's image and output it as an IMAGE tensor. |
+| `credentials_profile` | Which stored credentials profile to use (default `default`). See [Getting API Credentials](#getting-api-credentials). |
 
 ---
 
@@ -194,7 +199,7 @@ The `Gelbooru (Random)` and `Gelbooru (ID)` nodes share these common output sock
 | `width` | INT | Width of the image(s) in pixels. |
 | `height` | INT | Height of the image(s) in pixels. |
 | `source` | STRING | Source website URL(s) of the post(s) (one per line). |
-| `url` | STRING | The full API query URL used for the request (Gelbooru Random only). |
+| `url` | STRING | The full API query URL used for the request (Gelbooru Random only). Credentials inside it are masked as `api_key=***&user_id=***`. |
 | `IMAGE` | IMAGE | Image tensor — only populated when `return_picture` is enabled, otherwise a blank 1x1 image. |
 
 ---

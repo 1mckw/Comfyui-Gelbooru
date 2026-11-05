@@ -14,6 +14,15 @@ import urllib.parse
 import random
 from PIL import ImageDraw, ImageFont
 
+from .credentials import (
+    DEFAULT_PROFILE,
+    credentials_status,
+    resolve_credentials,
+    sanitize_url,
+)
+
+_legacy_key_warned = False
+
 
 def not_available_image():
     img = Image.new("RGB", (512, 512), color=(30, 30, 30))
@@ -33,12 +42,9 @@ def not_available_image():
     return img
 
 
-def _refresh_file_url(post_id, api_credentials, site="Gelbooru"):
+def _refresh_file_url(post_id, api_key="", user_id="", site="Gelbooru"):
     if not post_id:
         return ""
-    parsed = urllib.parse.parse_qs(api_credentials.lstrip('&'))
-    api_key = parsed.get('api_key', [''])[0]
-    user_id = parsed.get('user_id', [''])[0]
     base = "https://gelbooru.com/index.php" if site == "Gelbooru" else "https://api.rule34.xxx/index.php"
     url = f"{base}?page=dapi&s=post&q=index&id={post_id}&json=1"
     if api_key and user_id:
@@ -71,6 +77,38 @@ def load_good_tags():
         with open(path, 'r') as f:
             return [t.strip() for t in f.read().split(',') if t.strip()]
     return []
+
+
+CACHE_PATH = os.path.join(os.path.dirname(__file__), "gelbooru_prompt_cache.json")
+
+
+def _scrub_cached_values(value):
+    if isinstance(value, str):
+        return sanitize_url(value)
+    if isinstance(value, list):
+        return [_scrub_cached_values(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _scrub_cached_values(item) for key, item in value.items()}
+    return value
+
+
+def scrub_cache_file():
+    """Remove credentials that older versions cached inside the request URL."""
+    if not os.path.exists(CACHE_PATH):
+        return
+    try:
+        with open(CACHE_PATH, "r", encoding="utf-8") as handle:
+            raw = handle.read()
+        if "api_key=" not in raw:
+            return
+        data = json.loads(raw)
+        cleaned = _scrub_cached_values(data)
+        if cleaned != data:
+            with open(CACHE_PATH, "w", encoding="utf-8") as handle:
+                json.dump(cleaned, handle, indent=2)
+            print("[Gelbooru] Removed API credentials from gelbooru_prompt_cache.json")
+    except Exception as exc:  # noqa: BLE001 - never fail startup over a cache file
+        print(f"[Gelbooru] Could not clean the prompt cache ({exc})")
 
 
 #urls to image from https://github.com/wmatson/easy-comfy-nodes/blob/main/__init__.py#L140
@@ -214,11 +252,12 @@ class GelbooruRandom:
                 "Questionable": ("BOOLEAN", {"default": True, "tooltip": "Include Questionable/Sensitive rated posts"}),
                 "Explicit": ("BOOLEAN", {"default": True, "tooltip": "Include Explicit rated posts"}),
                 "score": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "Minimum score threshold (0 = no filter)"}),
-                "api_credentials": ("STRING", {"default": "", "tooltip": "API credentials in format: api_key=YOUR_KEY&user_id=YOUR_ID"}),
+                "api_credentials": ("STRING", {"default": "", "tooltip": "Legacy field, hidden in the node UI. API credentials in format: api_key=YOUR_KEY&user_id=YOUR_ID. Use the 'API key...' button instead - a key typed here is written into the workflow and into the PNG metadata."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "count": ("INT", {"default": 1, "min": 1, "max": 100, "tooltip": "Number of posts to fetch per request (max 100)"}),
                 "use_last_prompt": (["Disabled", "Last Prompt", "Previous Prompt"], {"default": "Disabled", "tooltip": "Disabled: fetch new results. Last Prompt: reuse previous API response. Previous Prompt: reuse the response before last."}),
                 "return_picture": ("BOOLEAN", {"default": False, "tooltip": "Download the first post's image and output as IMAGE tensor"}),
+                "credentials_profile": ("STRING", {"default": DEFAULT_PROFILE, "tooltip": "Credentials profile to use. The key itself is stored on the server (user/default/gelbooru_credentials.json), never in the workflow or the PNG metadata"}),
             },
             "optional": {
                 "extra_text": ("STRING", {"forceInput": True, "multiline": True, "tooltip": "Generated text from another node, prepended before the final output (connect only, not editable)"}),
@@ -247,9 +286,18 @@ class GelbooruRandom:
             return False
         return time.time()
 
-    def get_value(self, use_custom_prompt=False, site="Gelbooru", OR_tags="", AND_tags="", exclude_tag="", remove_tags="", add_good_tags=True, remove_bad_tags=True, convert_underscore=False, change_background="Don't Change", change_color="Don't Change", Safe=True, Questionable=True, Explicit=True, score=0, api_credentials="", seed=0, count=1, use_last_prompt="Disabled", return_picture=False, extra_text=None, custom_prompt=None):
+    def get_value(self, use_custom_prompt=False, site="Gelbooru", OR_tags="", AND_tags="", exclude_tag="", remove_tags="", add_good_tags=True, remove_bad_tags=True, convert_underscore=False, change_background="Don't Change", change_color="Don't Change", Safe=True, Questionable=True, Explicit=True, score=0, api_credentials="", seed=0, count=1, use_last_prompt="Disabled", return_picture=False, extra_text=None, custom_prompt=None, credentials_profile=DEFAULT_PROFILE):
+        global _legacy_key_warned
         cached = False
         img_url = ""
+        api_key, user_id, credentials_source = resolve_credentials(credentials_profile, api_credentials)
+        if credentials_source == "legacy" and not _legacy_key_warned:
+            _legacy_key_warned = True
+            print(
+                "[Gelbooru] The API key is stored inside the workflow. Use the 'API key...' button "
+                "in the node to move it to the server store - a key kept in the workflow leaks into "
+                "PNG metadata every time an image is saved."
+            )
         if use_last_prompt == "Last Prompt" and self.last_prompt != "":
             cached = True
             imgtags, imgurl, imgid, width, height, source, url = self.last_prompt
@@ -265,12 +313,12 @@ class GelbooruRandom:
             self.post_id = self.previous_post_id
 
         if not cached:
-            parsed = urllib.parse.parse_qs(api_credentials.lstrip('&'))
-            api_key = parsed.get('api_key', [''])[0]
-            user_id = parsed.get('user_id', [''])[0]
             if not api_key and not user_id:
                 raise ValueError(
                     "API credentials are required.\n"
+                    "Click 'API key...' in the node and paste the key once - it is stored in\n"
+                    f"{credentials_status(credentials_profile)['store_path']}\n"
+                    "and is never written into the workflow or the image metadata.\n"
                     "Get your API key at the bottom of:\n"
                     "https://gelbooru.com/index.php?page=account&s=options"
                 )
@@ -335,7 +383,12 @@ class GelbooruRandom:
             url = re.sub(r"\++", "+", url)
             
             time.sleep(0.1)
-            response = requests.get(url, verify=True)
+            try:
+                response = requests.get(url, verify=True)
+            except requests.exceptions.RequestException as exc:
+                # requests embeds the full URL (including the API key) into its
+                # error messages, so strip the credentials before re-raising.
+                raise RuntimeError(f"Gelbooru request failed: {sanitize_url(str(exc))}") from None
 
             if site == "Rule34":
                 posts = response.json()
@@ -354,7 +407,7 @@ class GelbooruRandom:
                 self.previous_prompt = self.last_prompt
                 self.previous_file_url = self.file_url
                 self.previous_post_id = self.post_id
-            self.last_prompt = (imgtags, imgurl, imgid, width, height, source, url)
+            self.last_prompt = (imgtags, imgurl, imgid, width, height, source, sanitize_url(url))
             self.file_url = imgurl.split('\n')[0] if imgurl else ""
             self.post_id = imgid.split('\n')[0] if imgid else ""
             self._save_cache()
@@ -436,6 +489,10 @@ class GelbooruRandom:
                 if good_tags:
                     imgtags = ', '.join(good_tags) + '\n' + imgtags
 
+        # The URL is exposed as an output and cached on disk, so the key and user
+        # id are blanked out before it leaves the node.
+        url = sanitize_url(url)
+
         if return_picture:
             referer = "https://gelbooru.com/" if site == "Gelbooru" else "https://rule34.xxx/"
 
@@ -461,7 +518,7 @@ class GelbooruRandom:
                 return None
 
             def _refresh_and_retry():
-                fresh_url = _refresh_file_url(self.post_id, api_credentials, site)
+                fresh_url = _refresh_file_url(self.post_id, api_key, user_id, site)
                 if fresh_url and fresh_url != img_url:
                     print(f"[INFO] Refreshed cached image URL: {fresh_url}")
                     img = _try_download(fresh_url, store=True)
@@ -550,6 +607,7 @@ class GelbooruID:
                 "post_id": ("STRING", {"default": "", "tooltip": "Numeric ID of the Gelbooru post to fetch"}),
                 "use_last_prompt": ("BOOLEAN", {"default": False, "tooltip": "Reuse the previous API response without making a new request"}),
                 "return_picture": ("BOOLEAN", {"default": False, "tooltip": "Download the post's image and output as IMAGE tensor"}),
+                "credentials_profile": ("STRING", {"default": DEFAULT_PROFILE, "tooltip": "Credentials profile to use. The key itself is stored on the server (user/default/gelbooru_credentials.json), never in the workflow or the PNG metadata"}),
             },
         }
         
@@ -567,7 +625,8 @@ class GelbooruID:
     FUNCTION = "get_value"
     CATEGORY = "Gelbooru"
   
-    def get_value(self, post_id, use_last_prompt=False, return_picture=False):
+    def get_value(self, post_id, use_last_prompt=False, return_picture=False, credentials_profile=DEFAULT_PROFILE):
+        api_key, user_id, _credentials_source = resolve_credentials(credentials_profile, "")
         cached = use_last_prompt and self.last_prompt != ""
         if cached:
             imgtags, imgurl, imgid, width, height, source = self.last_prompt
@@ -616,7 +675,7 @@ class GelbooruID:
                 return None
 
             def _refresh_and_retry():
-                fresh_url = _refresh_file_url(self.post_id, "", "Gelbooru")
+                fresh_url = _refresh_file_url(self.post_id, api_key, user_id, "Gelbooru")
                 if fresh_url and fresh_url != img_url:
                     print(f"[INFO] Refreshed cached image URL: {fresh_url}")
                     img = _try_download(fresh_url, store=True)
@@ -656,3 +715,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "GelbooruID": "Gelbooru (ID)",
     "UrlsToImage": "UrlsToImage",
 }
+
+# Older versions cached the request URL (with the API key) on disk.
+scrub_cache_file()
